@@ -9,7 +9,6 @@ public class SecurityConstants {
     }
     public static final String TOKEN_HEADER = "Authorization";
     public static final String TOKEN_PREFIX = "Bearer ";
-    public static final String JWT_SECRET = "jAYg8t4u9y$B&E)O@pcQrmhWdau5M8w?z%CUF-JempRgUkXP3llu8x/L?o(G+DbU";
     public static final String TOKEN_TYPE = "JWT";
     public static final String TOKEN_ISSUER = "secure-api";
     public static final String TOKEN_AUDIENCE = "secure-app";

@@ -68,3 +68,28 @@ Eliminare la vulnerabilità rappresentata dall'endpoint pubblico `POST /api/auth
 ### Stato
 - ✅ Config creata e compilata senza errori
 - ⏳ Test non eseguibile finché UC-B-006 (JwtUtility) non viene fixato (blocco pre-esistente sulla build)
+
+---
+
+## 2026-06-16 — UC-S-001: JWT Secret hardcoded + Exploit Demo
+
+### Vulnerabilità
+- JWT secret hardcoded in `SecurityConstants.java` come costante `public static final String`
+- Qualsiasi accesso al codice sorgente permette token forgery con ruolo ADMIN
+
+### Fix applicata
+1. Aggiunto `app.jwt.secret=${JWT_SECRET}` in `application.properties` e `application-docker.properties`
+2. Riscritto `JwtUtility` da `record` a `class` con `@Value("${app.jwt.secret}")` + `@PostConstruct` validazione (min 64 char)
+3. Rimosso `JWT_SECRET` da `SecurityConstants`
+4. Aggiunto `JWT_SECRET` in `.env`
+
+### Exploit Demo
+- `exploit/UC-S-001/forge_token.py` — genera token ADMIN forgiato con il vecchio secret
+- `exploit/UC-S-001/test_exploit.sh` — testa il token contro l'API (200 = vulnerabile, 401 = protetto)
+
+### Test
+- `JwtSecretExternalizationTest.java` — verifica via reflection che JWT_SECRET non è più in SecurityConstants
+
+### Note
+- Il fix include anche la conversione di JwtUtility da record a class (UC-B-006)
+- Build non eseguibile localmente (Java 17+ richiesto, ambiente ha Java 11)

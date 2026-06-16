@@ -2,6 +2,7 @@ package org.elis.ericsson.datathon.user_management.security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import org.elis.ericsson.datathon.user_management.constants.SecurityConstants;
 import org.elis.ericsson.datathon.user_management.model.dto.AuthResponseDTO;
@@ -11,7 +12,7 @@ import org.elis.ericsson.datathon.user_management.model.entity.UserProfile;
 import org.elis.ericsson.datathon.user_management.repository.RefreshTokenRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -23,19 +24,30 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-public record JwtUtility(RefreshTokenRepository refreshTokenRepository) {
+public class JwtUtility {
     private static final Logger logger = LoggerFactory.getLogger(JwtUtility.class);
 
-    @Autowired
-    public JwtUtility {
+    private final RefreshTokenRepository refreshTokenRepository;
+
+    @Value("${app.jwt.secret}")
+    private String jwtSecret;
+
+    public JwtUtility(RefreshTokenRepository refreshTokenRepository) {
+        this.refreshTokenRepository = refreshTokenRepository;
+    }
+
+    @PostConstruct
+    void validateSecret() {
+        if (jwtSecret == null || jwtSecret.isBlank() || jwtSecret.length() < 64) {
+            throw new IllegalStateException(
+                    "JWT secret must be configured via JWT_SECRET env variable (min 64 characters)");
+        }
     }
 
     public AuthResponseDTO generateAuthFromUser(UserProfile user) {
-        // Get token and refresh token.
         String token = generateTokenFromUser(user);
         RefreshToken refreshToken = createRefreshToken(user);
-        try{
-            // Prepare repsonse to send to FE with username, authorities and duration of the token.
+        try {
             return AuthResponseDTO.builder()
                     .id(user.getId())
                     .email(user.getEmail())
@@ -45,26 +57,25 @@ public record JwtUtility(RefreshTokenRepository refreshTokenRepository) {
                     .refreshToken(refreshToken.getToken())
                     .duration(SecurityConstants.TOKEN_EXPIRATION)
                     .build();
-        }catch ( Exception e){
+        } catch (Exception e) {
             logger.error("Error while generating auth response: " + e.getMessage());
         }
         return null;
     }
+
     /**
      * Generate token from the given user.
      * @param user The user.
      * @return the token.
      */
     public String generateTokenFromUser(UserProfile user) {
-        // Get the user roles
         List<String> roles = new ArrayList<>();
-        for(Role r : user.getRoles()){
+        for (Role r : user.getRoles()) {
             roles.add(r.getName());
         }
 
-        // Create the token.
         return Jwts.builder()
-                .signWith(SignatureAlgorithm.HS512, Keys.hmacShaKeyFor(SecurityConstants.JWT_SECRET.getBytes()))
+                .signWith(SignatureAlgorithm.HS512, Keys.hmacShaKeyFor(jwtSecret.getBytes()))
                 .setHeaderParam("typ", "JWT")
                 .setIssuedAt(new Date())
                 .setAudience("secure-app")
@@ -73,23 +84,23 @@ public record JwtUtility(RefreshTokenRepository refreshTokenRepository) {
                 .claim("rol", roles)
                 .compact();
     }
+
     /**
      * Get the user id from the token.
      * @param token The token.
      * @return The user id.
      */
     public Long getUserIdFromToken(String token) {
-
         Claims claims = Jwts.parser()
-                .setSigningKey(SecurityConstants.JWT_SECRET.getBytes())
+                .setSigningKey(jwtSecret.getBytes())
                 .parseClaimsJws(token)
                 .getBody();
 
         return Long.parseLong(claims.getSubject());
     }
+
     /**
      * Check if the given refresh token is valid or expired.
-     *
      * @param token the refresh token to be checked.
      */
     public void verifyExpiration(RefreshToken token) {
@@ -97,8 +108,8 @@ public record JwtUtility(RefreshTokenRepository refreshTokenRepository) {
             refreshTokenRepository.delete(token);
             throw new BadCredentialsException("Refresh token was expired. Please make a new sign in request");
         }
-
     }
+
     public String getJwtFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
@@ -113,11 +124,9 @@ public record JwtUtility(RefreshTokenRepository refreshTokenRepository) {
      * @return the created refresh token.
      */
     public RefreshToken createRefreshToken(UserProfile user) {
-        // Cerca un token di aggiornamento esistente per l'utente
         RefreshToken refreshToken = refreshTokenRepository.findByUserId(user.getId())
-                .orElse(new RefreshToken()); // Usa un nuovo token solo se non esiste già
+                .orElse(new RefreshToken());
 
-        // Imposta i dettagli del token
         refreshToken.setUser(user);
         refreshToken.setExpiryDate(Instant.now().plusMillis(SecurityConstants.REFRESH_TOKEN_EXPIRATION));
         refreshToken.setToken(UUID.randomUUID().toString());
@@ -127,8 +136,7 @@ public record JwtUtility(RefreshTokenRepository refreshTokenRepository) {
 
     public boolean validateToken(String token) {
         try {
-            byte[] signingKey = SecurityConstants.JWT_SECRET.getBytes();
-
+            byte[] signingKey = jwtSecret.getBytes();
             Jwts.parser().setSigningKey(signingKey).parseClaimsJws(token);
             return true;
         } catch (SignatureException ex) {
