@@ -110,3 +110,21 @@ Eliminare la vulnerabilità rappresentata dall'endpoint pubblico `POST /api/auth
 
 ### Stato
 - ✅ Build SUCCESS, 13/13 test passano
+
+---
+
+## 2026-06-16 — UC-B-004: Fix BCryptPasswordEncoder multipli
+
+### Evidenza del bug
+- `AuthServiceImpl` e `CustomAuthenticationManager` istanziano ciascuna un proprio `new BCryptPasswordEncoder()` invece di iniettare il bean definito in `SecurityConfig`
+
+### Fix applicata
+- `CustomAuthenticationManager`: injection `PasswordEncoder` via costruttore
+- `AuthServiceImpl`: injection `PasswordEncoder` via costruttore `@Autowired`
+- Rimossi import di `BCryptPasswordEncoder` da entrambe le classi
+
+### Test di regressione
+- `NoDuplicatePasswordEncoderTest.java` — scansiona i sorgenti e verifica che `new BCryptPasswordEncoder()` non appaia fuori da `SecurityConfig`
+
+### Stato
+- ✅ Build SUCCESS, 14/14 test passano
