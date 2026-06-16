@@ -22,8 +22,6 @@ public interface AuthService {
 
     ResponseEntity<TokenRefreshResponseDto> refreshtoken(String refreshToken) throws Exception;
 
-    ResponseEntity<?> createFirstUser(HttpServletRequest req) throws Exception;
-
     ResponseEntity<UserMeInfo> getCurrentUser(UserPrincipal userPrincipal);
 
     ResponseEntity<?> getAuthenticationToChangePassword(String token);

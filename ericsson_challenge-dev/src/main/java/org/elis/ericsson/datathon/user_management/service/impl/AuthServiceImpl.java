@@ -170,55 +170,6 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public ResponseEntity<?> createFirstUser(HttpServletRequest req) throws Exception {
-        try {
-            logger.debug("Enter into AuthService.createFirstUser : Parameters : {}", req);
-            // Check if the first user is already present.
-            if (userProfileRepository.count() > 0)
-                throw new Exception("First user already present!");
-            // Get ADMIN and USER role.
-            Optional<Role> ruoloAdmin = roleRepository.findByName("ROLE_ADMIN");
-            Optional<Role> ruoloUser = roleRepository.findByName("ROLE_USER");
-            ArrayList<Role> roles = new ArrayList<>();
-
-            // If the roles are not present, create them.
-            if (ruoloAdmin.isEmpty()) {
-                Role role = new Role();
-                role.setName("ROLE_ADMIN");
-                roles.add(roleRepository.save(role));
-            } else {
-                roles.add(ruoloAdmin.get());
-            }
-            if (ruoloUser.isEmpty()) {
-                Role role = new Role();
-                role.setName("ROLE_USER");
-                roles.add(roleRepository.save(role));
-            } else {
-                roles.add(ruoloUser.get());
-            }
-
-
-            UserProfile user = new UserProfile();
-            user.setEmail("admin@elis.org");
-            user.setFirstName("firstName_admin");
-            user.setLastName("lastName_admin");
-            user.setPassword(passwordEncoder.encode("password"));
-            user.setRoles(roles);
-            // Save the user in the database.
-            try {
-                userProfileRepository.save(user);
-            } catch (Exception e) {
-                throw new InvalidCredentialsException("User already present!");
-
-            }
-            return ResponseEntity.ok(user);
-        } catch (Exception e) {
-            logger.error("Error in AuthServiceImpl.createFirstUser" + e.getMessage());
-            throw e;
-        }
-    }
-
-    @Override
     public ResponseEntity<UserMeInfo> getCurrentUser(UserPrincipal userPrincipal) {
         try {
             logger.debug("Enter into AuthService.getCurrentUser : Parameters : {}", userPrincipal);

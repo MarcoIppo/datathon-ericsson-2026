@@ -75,7 +75,7 @@ mvnw.cmd spring-boot:run
 
 ## Credenziali di Default
 
-Al primo avvio viene creato un utente amministratore:
+Al primo avvio, se il database è vuoto, viene creato automaticamente un utente amministratore:
 
 | Campo | Valore |
 |---|---|

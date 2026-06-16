@@ -86,16 +86,6 @@ public class AuthControllerImpl implements AuthController {
     public ResponseEntity<AuthResponseDTO> getSession() {
         return authService.getSession();
     }
-
-    /**
-     * Create the first user in the database.
-     *
-     * @return the created user
-     */
-    @PostMapping("/createFirstUser")
-    public ResponseEntity<?> createFirstUser(HttpServletRequest req) throws Exception {
-        return authService.createFirstUser(req);
-    }
 }
 
 
