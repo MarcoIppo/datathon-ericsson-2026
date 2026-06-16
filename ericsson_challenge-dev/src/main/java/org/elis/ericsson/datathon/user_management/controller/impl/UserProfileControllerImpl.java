@@ -3,12 +3,15 @@ package org.elis.ericsson.datathon.user_management.controller.impl;
 import jakarta.transaction.Transactional;
 import org.elis.ericsson.datathon.user_management.controller.UserProfileController;
 
+import org.elis.ericsson.datathon.user_management.model.entity.UserPrincipal;
 import org.elis.ericsson.datathon.user_management.model.entity.UserProfile;
 import org.elis.ericsson.datathon.user_management.model.exception.ItemNotFoundException;
 import org.elis.ericsson.datathon.user_management.repository.RefreshTokenRepository;
 import org.elis.ericsson.datathon.user_management.repository.RoleRepository;
 import org.elis.ericsson.datathon.user_management.service.UserProfileService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import static org.elis.ericsson.datathon.user_management.constants.Endpoints.API;
@@ -38,7 +41,10 @@ public class UserProfileControllerImpl implements UserProfileController {
 
     @Transactional
     @Override
-    public ResponseEntity<Void> deleteProfile(@PathVariable Long id) throws ItemNotFoundException {
+    public ResponseEntity<Void> deleteProfile(@PathVariable Long id, @AuthenticationPrincipal UserPrincipal userPrincipal) throws ItemNotFoundException {
+        if (userPrincipal.getId().equals(id)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         refreshTokenRepository.deleteByUserId(id);
         userProfileService.deleteProfile(id);
         return ResponseEntity.noContent().build();

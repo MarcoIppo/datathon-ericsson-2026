@@ -70,13 +70,28 @@ public class UserProfileWebController {
 
     @PostMapping("/edit/{id}")
     public String editProfile(@PathVariable Long id, @ModelAttribute("editProfile") UserProfile updatedProfile,
-                              @RequestParam("roles") List<Long> roleIds) {
-        List<Role> roles = new ArrayList<>();
-        for (Long roleId : roleIds) {
-            roles.add(roleRepository.findById(roleId)
-                    .orElseThrow(() -> new ItemNotFoundException(ROLE_NOT_FOUND)));
+                              @RequestParam("roles") List<Long> roleIds,
+                              @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        boolean isAdmin = userPrincipal.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        // Non-admin users can only edit their own profile and cannot change roles
+        if (!isAdmin) {
+            if (!userPrincipal.getId().equals(id)) {
+                throw new org.springframework.security.access.AccessDeniedException("Cannot edit another user's profile");
+            }
+            // Preserve existing roles — non-admin cannot modify roles
+            UserProfile existing = userProfileService.getProfileById(id);
+            updatedProfile.setRoles(existing.getRoles());
+        } else {
+            List<Role> roles = new ArrayList<>();
+            for (Long roleId : roleIds) {
+                roles.add(roleRepository.findById(roleId)
+                        .orElseThrow(() -> new ItemNotFoundException(ROLE_NOT_FOUND)));
+            }
+            updatedProfile.setRoles(roles);
         }
-        updatedProfile.setRoles(roles);
+
         userProfileService.editProfile(id, updatedProfile);
         return "redirect:/profiles";
     }
