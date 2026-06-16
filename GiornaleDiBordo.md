@@ -34,3 +34,37 @@ Eliminare la vulnerabilità rappresentata dall'endpoint pubblico `POST /api/auth
 ### Note
 - Il progetto base **non compila** già dall'initial commit a causa di un bug pre-esistente in `JwtUtility.java` (uso illegale di `public record` con static fields e `@Autowired`). Questo è un BUGFIX UC separato.
 - Le modifiche UC-S-003 sono corrette e non introducono nuovi errori.
+
+---
+
+## 2026-06-16 — Push su GitHub MarcoIppo
+
+- **Remote:** `git@github.com:MarcoIppo/datathon-ericsson-2026.git` (SSH)
+- **Branch:** `main`
+- **Commit pushati:**
+  - `b43706a` — Initial commit
+  - `b0d2691` — chore: setup Kiro steering, specs structure e GiornaleDiBordo
+  - `d1b3ba8` — fix(security): UC-S-003 rimozione endpoint createFirstUser, seed admin automatico allo startup
+  - `f1fcf77` — fix(security): authorization checks on delete and edit profile endpoints
+- **Ultimo commit** include: controllo che un utente non possa eliminare sé stesso, e che un non-admin possa editare solo il proprio profilo senza modificare i ruoli
+
+---
+
+## 2026-06-16 — UC-B-001: Fix @EnableJpaAuditing mancante
+
+### Evidenza del bug
+- `DateAudit.java` dichiara `@EntityListeners(AuditingEntityListener.class)` + `@CreatedDate`/`@LastModifiedDate`
+- 7 entità estendono `DateAudit`
+- Nessuna classe `@Configuration` dichiara `@EnableJpaAuditing` → i campi `created_at`/`updated_at` restano `null`
+
+### Fix applicata
+- Creato `configuration/JpaAuditingConfig.java` con `@Configuration` + `@EnableJpaAuditing`
+
+### Test di regressione
+- `JpaAuditingTest.java` (`@DataJpaTest` + `@Import(JpaAuditingConfig.class)`)
+  1. Persist di un `Role` → asserisce `createdAt != null`
+  2. Update di un `Role` → asserisce `updatedAt != null` e `>= createdAt`
+
+### Stato
+- ✅ Config creata e compilata senza errori
+- ⏳ Test non eseguibile finché UC-B-006 (JwtUtility) non viene fixato (blocco pre-esistente sulla build)
