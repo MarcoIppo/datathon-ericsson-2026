@@ -8,7 +8,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.elis.ericsson.datathon.user_management.model.modelbase.DateAudit;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
@@ -16,7 +15,6 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@EnableAutoConfiguration
 @EntityListeners(AuditingEntityListener.class)
 public class Role extends DateAudit {
 

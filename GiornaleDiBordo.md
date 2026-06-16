@@ -93,3 +93,20 @@ Eliminare la vulnerabilità rappresentata dall'endpoint pubblico `POST /api/auth
 ### Note
 - Il fix include anche la conversione di JwtUtility da record a class (UC-B-006)
 - Build non eseguibile localmente (Java 17+ richiesto, ambiente ha Java 11)
+
+---
+
+## 2026-06-16 — UC-B-002: Fix @EnableAutoConfiguration su Entity
+
+### Evidenza del bug
+- `@EnableAutoConfiguration` presente su `RefreshToken.java` e `Role.java`
+- Annotazione di bootstrap Spring Boot usata impropriamente su entity JPA
+
+### Fix applicata
+- Rimossa annotazione e import da entrambe le entity
+
+### Test di regressione
+- `NoEnableAutoConfigOnEntityTest.java` — verifica via reflection che nessuna entity nel package `model.entity` usa `@EnableAutoConfiguration`
+
+### Stato
+- ✅ Build SUCCESS, 13/13 test passano
