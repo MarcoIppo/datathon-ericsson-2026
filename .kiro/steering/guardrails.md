@@ -35,6 +35,7 @@
 
 ## Operazioni che richiedono conferma esplicita
 
+- Modifica o rimozione di credenziali di default (password admin, secret, chiavi) senza chiedere
 - Eliminazione di file o directory
 - DROP, TRUNCATE, DELETE massivi su database
 - Migrazioni o script SQL che alterino struttura del DB

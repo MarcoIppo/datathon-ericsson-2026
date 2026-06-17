@@ -7,6 +7,12 @@
 
 User Profile Management System — Spring Boot app con autenticazione JWT, gestione ruoli ADMIN/USER e UI Thymeleaf/Bootstrap. Sviluppato nell'ambito del Datathon Ericsson 2026 (Academy GenAI - ELIS Innovation Hub).
 
+## Conventions
+
+- Lingua codice/commenti: inglese. Documentazione/comunicazione: italiano.
+- Specs per UC: in `.kiro/specs/` viene creata una cartella per ogni use case (es. `.kiro/specs/UC-S-003/`), contenente `requirements.md`, `design.md` e `tasks.md`. Per `requirements.md` seguire il formato: User Story, Requisiti Funzionali, Requisiti Non Funzionali, Criteri di Accettazione in formato Given/When/Then.
+- Logbook: mantenere aggiornato `GiornaleDiBordo.md` nella root del progetto. Per ogni UC affrontato, registrare ID, titolo, esito e appunti rilevanti. Prima di passare a un nuovo UC, proporre all'utente cosa inserire nel logbook.
+
 ## Tech Stack
 
 | Componente | Tecnologia | Versione |
@@ -136,6 +142,14 @@ cd ericsson_challenge-dev
 
 45 UC totali: 7 BUGFIX, 10 SECURITY, 12 FEATURE, 9 TESTING, 7 DEVOPS.
 Difficoltà: 14 EASY, 18 MEDIUM, 9 HARD, 4 EXPERT.
+Riferimento completo: `analisi/Datathon_Ericsson_2026_v4.docx`.
+
+## Strategy
+
+- Analizzare attentamente il codice esistente prima di apportare modifiche.
+- Per ogni UC, generare i documenti di design (`design.md`) e tasks (`tasks.md`) prima di procedere con l'implementazione.
+- Per ogni UC, implementare unit test a copertura del nuovo codice introdotto.
+- Aggiornare i checkbox nel `tasks.md` immediatamente dopo il completamento di ogni task, senza attendere richiesta esplicita.
 
 ## Testing Strategy
 
