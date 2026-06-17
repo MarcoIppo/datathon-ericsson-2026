@@ -48,6 +48,7 @@ public class UserProfile extends DateAudit {
     private String phoneNumber;
 
     @Column(name = "password")
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     @ManyToMany(fetch = FetchType.EAGER)
