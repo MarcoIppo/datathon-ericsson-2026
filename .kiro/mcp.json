@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "datathon-db": {
+      "command": "mcp-server/venv/bin/python",
+      "args": ["mcp-server/index.py"],
+      "env": {
+        "DB_PROFILE": "h2",
+        "DB_USERNAME": "admin",
+        "DB_PASSWORD": "${DB_PASSWORD}",
+        "H2_DB_PATH": "ericsson_challenge-dev/data/datathon_user_db",
+        "H2_JAR_PATH": "mcp-server/h2.jar"
+      }
+    }
+  }
+}

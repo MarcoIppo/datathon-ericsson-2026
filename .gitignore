@@ -1,0 +1,5 @@
+
+# MCP Server
+mcp-server/venv/
+mcp-server/audit.log
+mcp-server/h2.jar
