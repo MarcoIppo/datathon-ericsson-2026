@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.elis.ericsson.datathon.user_management.model.entity.eggup.EggUpInfo;
+import org.elis.ericsson.datathon.user_management.model.validation.NoXss;
 import org.hibernate.proxy.HibernateProxy;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -27,18 +28,23 @@ public class UserProfile extends DateAudit {
     private Long id;
 
     @Column(name = "username")
+    @NoXss
     private String username;
 
     @Column(name = "email", nullable = false, unique = true)
+    @NoXss
     private String email;
 
     @Column(name = "first_name")
+    @NoXss
     private String firstName;
 
     @Column(name = "last_name")
+    @NoXss
     private String lastName;
 
     @Column(name = "phone_number")
+    @NoXss
     private String phoneNumber;
 
     @Column(name = "password")

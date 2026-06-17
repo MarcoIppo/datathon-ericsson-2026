@@ -25,6 +25,7 @@
 
 - Al termine di ogni UC, eseguire una batteria di test per validarne completamento e correttezza
 - Privilegiare test automatizzati (unit, integration) dove possibile
+- Verificare sempre il fix anche sull'applicazione target (Docker) prima di considerare lo UC completato
 
 ## Approccio ai test — NON DISTRUTTIVO
 
@@ -32,6 +33,11 @@
 - Ingegnarsi per trovare alternative creative e non invasive — esplorare OGNI strada possibile
 - Il percorso distruttivo è l'ULTIMA SPIAGGIA: solo quando ogni alternativa è stata esplorata e dimostrata non praticabile
 - In quel caso, e solo in quel caso, chiedere conferma esplicita spiegando perché non esistono alternative
+
+## Comunicazione e conferme
+
+- Prima di procedere con la prossima fase (analisi, creazione file, implementazione, test, commit), dichiarare esplicitamente cosa si sta per fare: quali directory/file verranno creati, modificati o eliminati, e in quale percorso.
+- Attendere conferma dell'utente prima di eseguire.
 
 ## Operazioni che richiedono conferma esplicita
 

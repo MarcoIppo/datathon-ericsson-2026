@@ -6,6 +6,7 @@ import org.elis.ericsson.datathon.user_management.model.entity.UserProfile;
 import org.elis.ericsson.datathon.user_management.model.exception.ItemNotFoundException;
 import org.elis.ericsson.datathon.user_management.repository.RoleRepository;
 import org.elis.ericsson.datathon.user_management.service.UserProfileService;
+import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -50,7 +51,7 @@ public class UserProfileWebController {
 
     @PostMapping("/add")
     @PreAuthorize("hasRole('ADMIN')")
-    public String addProfile(@ModelAttribute("newProfile") UserProfile newProfile, @RequestParam("roles") List<Long> roleIds) {
+    public String addProfile(@Valid @ModelAttribute("newProfile") UserProfile newProfile, @RequestParam("roles") List<Long> roleIds) {
         List<Role> roles = new ArrayList<>();
         for (Long roleId : roleIds) {
             roles.add(roleRepository.findById(roleId)
@@ -69,7 +70,7 @@ public class UserProfileWebController {
     }
 
     @PostMapping("/edit/{id}")
-    public String editProfile(@PathVariable Long id, @ModelAttribute("editProfile") UserProfile updatedProfile,
+    public String editProfile(@PathVariable Long id, @Valid @ModelAttribute("editProfile") UserProfile updatedProfile,
                               @RequestParam("roles") List<Long> roleIds,
                               @AuthenticationPrincipal UserPrincipal userPrincipal) {
         boolean isAdmin = userPrincipal.getAuthorities().stream()

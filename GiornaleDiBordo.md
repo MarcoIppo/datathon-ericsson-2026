@@ -128,3 +128,29 @@ Eliminare la vulnerabilità rappresentata dall'endpoint pubblico `POST /api/auth
 
 ### Stato
 - ✅ Build SUCCESS, 14/14 test passano
+
+---
+
+## 2026-06-17 — UC-S-005: XSS in profiles.html + Exploit Demo
+
+### Vulnerabilità
+- `profiles.html` usa `innerHTML` con template literals non sanitizzati per rendere dati utente
+- Un attaccante poteva registrarsi con payload XSS nel nome → Stored XSS per tutti i visitatori
+
+### Fix applicata (defense-in-depth)
+1. **Input validation server-side:** annotation custom `@NoXss` + `NoXssValidator` con regex `[<>"\\]|&[a-zA-Z]+;|&#`
+   - Applicata su: `username`, `firstName`, `lastName`, `email`, `phoneNumber`
+   - Endpoint protetti: signup, add profile, edit profile (con `@Valid`)
+2. **Output escaping client-side:** funzione `escapeHtml()` in `profiles.html` come safety net
+
+### Internazionalizzazione
+- Nomi con apostrofo (`O'Brien`), trattino (`Jean-Pierre`), accenti (`François`), cirillico (`Дмитрий`), CJK (`田中`) sono tutti accettati
+
+### Exploit Demo
+- `exploit/UC-S-005/xss_payload.sh` — tenta signup con payload XSS
+
+### Test
+- `NoXssValidatorTest.java` — 20 test parametrizzati (7 XSS rifiutati, 12 nomi internazionali accettati, 1 null)
+
+### Stato
+- ✅ Build SUCCESS, 34/34 test passano
