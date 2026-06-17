@@ -3,3 +3,7 @@
 mcp-server/venv/
 mcp-server/audit.log
 mcp-server/h2.jar
+
+# Python
+__pycache__/
+*.pyc
