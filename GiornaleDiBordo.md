@@ -316,3 +316,37 @@ Implementare un sistema di audit log automatico tramite AOP che registri le azio
 - Il token per leggere il log via API genera a sua volta una entry `USER_LOGIN` — effetto collaterale inevitabile con autenticazione stateless
 - `errorMessage` escluso dal DTO API per sicurezza (potrebbe contenere dettagli interni)
 - UC-F-006 (Dashboard Analytics) dipende da questo UC — ora sbloccato
+
+---
+
+## 2026-06-18 — UC-F-006: Dashboard Analytics
+
+### Obiettivo
+Dashboard visuale accessibile dalla navbar (solo ADMIN) con statistiche aggregate, 3 grafici Chart.js, allerta brute force, tabella audit scrollabile con filtro JS e badge sessioni attive.
+
+### Componenti implementati
+- `TopUserDto` + `DashboardStatsDto` (11 campi aggregati)
+- `AuditLogRepository`: +5 query aggregate (loginsByHour con EXTRACT, loginsByDay, countByAction, topUsers)
+- `DashboardService` + `DashboardServiceImpl`: 24 bucket ore, 7 bucket giorni, @Value threshold brute force
+- `DashboardWebController` + `DashboardRestControllerImpl` con @PreAuthorize ADMIN
+- `SecurityConfig`: regole /dashboard/** e /api/dashboard/**
+- `base.html`: bottone Dashboard con sec:authorize ROLE_ADMIN
+- `dashboard.html`: banner allerta, 5 widget, 3 grafici Chart.js, top 5 utenti, tabella audit + filtro JS
+- `chart.umd.min.js`: file statico locale (WebJar non disponibile su Nexus aziendale)
+
+### Fix durante l'implementazione
+1. WebJar Chart.js 4.4.1 non disponibile su Nexus → file statico locale
+2. Query `FUNCTION('hour', ...)` non compatibile con PostgreSQL → `EXTRACT(HOUR FROM ...)`
+3. Script `th:inline="javascript"` fuori dal `layout:fragment="content"` → scartato da Thymeleaf Layout Dialect → spostato dentro il fragment
+4. `defer` su Chart.js → rimosso (init grafici avveniva prima del caricamento libreria)
+5. `onlineNow` approssimativo: usa `expiryDate` come proxy sessioni valide (fix futuro: `lastUsedAt`)
+
+### Test
+- `DashboardServiceTest` (5 test) + `DashboardRestControllerTest` (3 test)
+- `@MockitoSettings(LENIENT)` necessario per stub condivisi in setUp
+- **BUILD SUCCESS: 54/54 test**
+
+### Verifica Docker
+- `/dashboard` → tutti i widget e grafici visibili ✅
+- `/api/dashboard/stats` → JSON completo, 24 bucket ore, 7 giorni ✅
+- 120 entry casuali inserite per demo (totale audit log: 229 entry)

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{base}">
+<head>
+    <title>Dashboard Analytics</title>
+    <script th:src="@{/js/chart.umd.min.js}"></script>
+    <style>
+        .stat-card { border-left: 4px solid #0066cc; }
+        .stat-card.danger { border-left-color: #dc3545; }
+        .stat-card.success { border-left-color: #198754; }
+        .stat-card.warning { border-left-color: #ffc107; }
+        .stat-value { font-size: 2rem; font-weight: bold; color: #003366; }
+        .chart-container { position: relative; height: 260px; }
+        #audit-table-wrapper { max-height: 420px; overflow-y: auto; }
+        .alert-brute { font-size: 1.05rem; }
+    </style>
+</head>
+<body>
+<div class="container-fluid mt-4" layout:fragment="content">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>📊 Dashboard Analytics</h2>
+        <span class="badge bg-success fs-6" th:text="'🟢 Online: ' + ${stats.onlineNow}">🟢 Online: 0</span>
+    </div>
+
+    <!-- Banner brute force -->
+    <div class="alert alert-danger alert-brute d-flex align-items-center" role="alert"
+         th:if="${stats.bruteForceAlert}">
+        <strong>⚠ Possibile attacco brute force rilevato!</strong>&nbsp;
+        Rilevati più di <span th:text="${stats.failedLoginsToday}">0</span> login falliti nelle ultime ore.
+    </div>
+
+    <!-- Widget statistici -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card h-100 p-3">
+                <div class="text-muted small">Utenti registrati</div>
+                <div class="stat-value" th:text="${stats.totalUsers}">0</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card success h-100 p-3">
+                <div class="text-muted small">Login riusciti oggi</div>
+                <div class="stat-value text-success" th:text="${stats.loginsToday}">0</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card danger h-100 p-3">
+                <div class="text-muted small">Login falliti oggi</div>
+                <div class="stat-value text-danger" th:text="${stats.failedLoginsToday}">0</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card warning h-100 p-3">
+                <div class="text-muted small">Azioni totali nel log</div>
+                <div class="stat-value text-warning" th:text="${stats.totalAuditEntries}">0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grafici -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card p-3 h-100">
+                <h6 class="text-muted mb-2">Login per ora — ultime 24h</h6>
+                <div class="chart-container">
+                    <canvas id="chartHour"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card p-3 h-100">
+                <h6 class="text-muted mb-2">Distribuzione azioni</h6>
+                <div class="chart-container">
+                    <canvas id="chartPie"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row g-3 mb-4">
+        <div class="col-md-8">
+            <div class="card p-3 h-100">
+                <h6 class="text-muted mb-2">Trend accessi — ultimi 7 giorni</h6>
+                <div class="chart-container">
+                    <canvas id="chartWeek"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-3 h-100">
+                <h6 class="text-muted mb-2">🏆 Top 5 utenti più attivi</h6>
+                <table class="table table-sm table-hover mt-2">
+                    <thead><tr><th>Email</th><th class="text-end">Azioni</th></tr></thead>
+                    <tbody>
+                        <tr th:each="u : ${stats.topUsers}">
+                            <td th:text="${u.email}" class="text-truncate" style="max-width:180px"></td>
+                            <td class="text-end fw-bold" th:text="${u.actionCount}"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabella audit scrollabile -->
+    <div class="card p-3 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="text-muted mb-0">📋 Audit Log — ultimi eventi</h6>
+            <input type="text" id="auditFilter" class="form-control form-control-sm w-25"
+                   placeholder="🔍 Filtra per email o azione..." onkeyup="filterAudit()">
+        </div>
+        <div id="audit-table-wrapper">
+            <table class="table table-sm table-striped table-hover" id="auditTable">
+                <thead class="table-dark sticky-top">
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Azione</th>
+                        <th>Email</th>
+                        <th>Esito</th>
+                        <th>IP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="e : ${stats.recentEvents}"
+                        th:classappend="${e.outcome.name() == 'FAILURE'} ? 'table-danger' : ''">
+                        <td th:text="${#temporals.format(e.timestamp, 'dd/MM/yyyy HH:mm:ss')}"></td>
+                        <td><span class="badge bg-secondary" th:text="${e.action}"></span></td>
+                        <td th:text="${e.userEmail}"></td>
+                        <td>
+                            <span class="badge"
+                                  th:classappend="${e.outcome.name() == 'SUCCESS'} ? 'bg-success' : 'bg-danger'"
+                                  th:text="${e.outcome}"></span>
+                        </td>
+                        <td th:text="${e.ipAddress}"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+<script th:inline="javascript">
+/*<![CDATA[*/
+document.addEventListener('DOMContentLoaded', function() {
+    const loginsByHour = /*[[${stats.loginsByHour}]]*/ [];
+    const loginsByDay  = /*[[${stats.loginsByDay}]]*/ [];
+    const actionDist   = /*[[${stats.actionDistribution}]]*/ {};
+
+    // Grafico barre — login per ora
+    new Chart(document.getElementById('chartHour'), {
+        type: 'bar',
+        data: {
+            labels: Array.from({length: 24}, (_, i) => i + 'h'),
+            datasets: [{
+                label: 'Login riusciti',
+                data: loginsByHour,
+                backgroundColor: 'rgba(0, 102, 204, 0.7)'
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false,
+                   plugins: { legend: { display: false } } }
+    });
+
+    // Grafico torta — distribuzione azioni
+    const pieColors = ['#0066cc','#198754','#dc3545','#ffc107','#6f42c1','#0dcaf0'];
+    new Chart(document.getElementById('chartPie'), {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(actionDist),
+            datasets: [{ data: Object.values(actionDist), backgroundColor: pieColors }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+
+    // Grafico linea — trend 7 giorni
+    const today = new Date();
+    const dayLabels = Array.from({length: 7}, (_, i) => {
+        const d = new Date(today); d.setDate(today.getDate() - (6 - i));
+        return d.toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit'});
+    });
+    new Chart(document.getElementById('chartWeek'), {
+        type: 'line',
+        data: {
+            labels: dayLabels,
+            datasets: [{
+                label: 'Login totali',
+                data: loginsByDay,
+                borderColor: '#0066cc',
+                backgroundColor: 'rgba(0,102,204,0.1)',
+                fill: true, tension: 0.3
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false,
+                   plugins: { legend: { display: false } } }
+    });
+});
+
+function filterAudit() {
+    const filter = document.getElementById('auditFilter').value.toLowerCase();
+    const rows = document.querySelectorAll('#auditTable tbody tr');
+    rows.forEach(row => {
+        row.style.display = row.textContent.toLowerCase().includes(filter) ? '' : 'none';
+    });
+}
+/*]]>*/
+</script>
+
+</div>
+</body>
+</html>

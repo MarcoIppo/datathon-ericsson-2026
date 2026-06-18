@@ -42,6 +42,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/profiles/add").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/profiles/{id}").hasRole("ADMIN")
                         .requestMatchers("/api/audit/**").hasRole("ADMIN")
+                        .requestMatchers("/dashboard/**").hasRole("ADMIN")
+                        .requestMatchers("/api/dashboard/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/profiles/edit/{id}").authenticated()
 
                         // Tutte le altre richieste richiedono autenticazione
