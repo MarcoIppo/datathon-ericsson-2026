@@ -1,5 +1,6 @@
 package org.elis.ericsson.datathon.user_management.service.impl;
 
+import org.elis.ericsson.datathon.user_management.model.audit.AuditAction;
 import org.elis.ericsson.datathon.user_management.model.entity.Role;
 import org.elis.ericsson.datathon.user_management.model.entity.UserProfile;
 import org.elis.ericsson.datathon.user_management.model.exception.ItemNotFoundException;
@@ -49,6 +50,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     }
 
     @Override
+    @AuditAction(action = "PROFILE_UPDATE")
     public UserProfile editProfile(Long id, UserProfile updatedProfile) throws ItemNotFoundException {
         return userProfileRepository.findById(id)
                 .map(existingProfile -> {
@@ -74,6 +76,7 @@ public class UserProfileServiceImpl implements UserProfileService {
 
 
     @Override
+    @AuditAction(action = "PROFILE_DELETE")
     public void deleteProfile(Long id) throws ItemNotFoundException {
         if (!userProfileRepository.existsById(id)) {
             throw new ItemNotFoundException("User profile not found with id: " + id);

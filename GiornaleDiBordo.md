@@ -261,3 +261,58 @@ La documentazione ufficiale Kiro descrive un sistema di governance MCP enterpris
 - Agent configuration: `.kiro/agents/datathon-analyst.json`
 - MCP server: `mcp-server/index.py`
 - Audit log: `mcp-server/audit.log`
+
+---
+
+## 2026-06-18 — UC-F-003: Audit Log Service completo
+
+### Obiettivo
+Implementare un sistema di audit log automatico tramite AOP che registri le azioni rilevanti degli utenti (login, signup, logout, modifica/cancellazione profilo) su DB, con API REST di consultazione riservata agli ADMIN.
+
+### Analisi preliminare
+- Creati i 4 file di spec in `.kiro/specs/UC-F-003/`: `analysis.md`, `requirements.md`, `design.md`, `tasks.md`
+- Aggiornato il template in `project.md` e `guardrails.md` per includere `analysis.md` come primo documento obbligatorio, con scenari di rischio espliciti in `analysis.md`, scenari funzionali (Given/When/Then) in `requirements.md`, casi di test concreti in `tasks.md`
+- Aggiunta sezione **Specifiche API REST** e **Check di Sicurezza** (SEC-01→SEC-05) in `requirements.md`
+
+### Componenti implementati
+
+| File | Descrizione |
+|------|-------------|
+| `model/audit/AuditAction.java` | Annotazione custom `@AuditAction(action="...")` |
+| `model/entity/AuditLog.java` | Entity JPA con enum Outcome (SUCCESS/FAILURE), indici su timestamp/user_email/action |
+| `repository/AuditLogRepository.java` | Query per email (contains) e action |
+| `service/AuditLogService.java` + `impl/` | save, findAll, findByEmail, findByAction |
+| `configuration/AuditAspect.java` | `@Aspect @Around` — intercetta metodi annotati, gestione eccezioni fire-and-forget, estrazione IP da X-Forwarded-For |
+| `model/dto/AuditLogDto.java` | DTO response API (errorMessage escluso per sicurezza) |
+| `controller/AuditLogController.java` + `impl/` | `GET /api/audit` con paginazione DESC per timestamp, filtri email/action, `@PreAuthorize("hasRole('ADMIN')")` |
+
+### Modifiche a file esistenti
+
+- `pom.xml` — aggiunta dipendenza `spring-boot-starter-aop`
+- `SecurityConfig.java` — aggiunta regola `.requestMatchers("/api/audit/**").hasRole("ADMIN")`
+- `AuthServiceImpl.java` — annotati `login()` (`USER_LOGIN`), `registerUser()` (`USER_SIGNUP`), `logout()` (`USER_LOGOUT`)
+- `UserProfileServiceImpl.java` — annotati `editProfile()` (`PROFILE_UPDATE`), `deleteProfile()` (`PROFILE_DELETE`)
+
+### Fix durante l'implementazione
+
+1. **`@Override` duplicati in `AuthServiceImpl`** — il `strReplace` aveva duplicato l'annotazione; rimossi
+2. **`AuditAspect.resolveUserEmail()`** — inizialmente leggeva solo il `SecurityContext` → email sempre `anonymous` per i login (SecurityContext non ancora popolato). Fix: fallback che estrae l'email dall'argomento del metodo via reflection (`getEmail()` sul primo argomento)
+3. **Bug pre-esistente `result.setPassword(null)` in `registerUser()`** — Hibernate flushava il null sul DB rendendo gli utenti creati via signup non accessibili. Identificato ma non fixato in questo UC (out of scope)
+
+### Test
+- `AuditAspectTest` — 4 test: success, failure, anonymous, save-fail non blocca il flusso
+- `AuditLogServiceTest` — 3 test: save, findAll paginato, findByEmail
+- `AuditLogControllerTest` — 3 test: ADMIN 200, anonimo 401, USER (verificato a runtime)
+- **BUILD SUCCESS: 46/46 test**
+
+### Verifica Docker
+- `GET /api/audit` con token ADMIN → 200 ✅
+- AOP intercetta correttamente tutti i tipi di azione ✅
+- 88 entry nel log al termine della sessione (login, logout, signup, PROFILE_DELETE, PROFILE_UPDATE)
+- Raffica di 43 login falliti tra 09:55 e 10:00 (test exploit UC-S-002) correttamente tracciata
+- Fix `resolveUserEmail` verificato: le entry recenti mostrano l'email reale (es. `admin@elis.org`, `francois@example.com`)
+
+### Note
+- Il token per leggere il log via API genera a sua volta una entry `USER_LOGIN` — effetto collaterale inevitabile con autenticazione stateless
+- `errorMessage` escluso dal DTO API per sicurezza (potrebbe contenere dettagli interni)
+- UC-F-006 (Dashboard Analytics) dipende da questo UC — ora sbloccato

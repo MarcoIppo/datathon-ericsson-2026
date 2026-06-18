@@ -14,6 +14,7 @@ import org.elis.ericsson.datathon.user_management.model.projection.UserMeInfo;
 import org.elis.ericsson.datathon.user_management.repository.*;
 import org.elis.ericsson.datathon.user_management.security.CustomAuthenticationManager;
 import org.elis.ericsson.datathon.user_management.security.JwtUtility;
+import org.elis.ericsson.datathon.user_management.model.audit.AuditAction;
 import org.elis.ericsson.datathon.user_management.service.AuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +65,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @AuditAction(action = "USER_LOGIN")
     public ResponseEntity<AuthResponseDTO> login(LoginDto loginDto) {
         try {
             logger.debug("Enter into AuthService.login : Parameters : {}", loginDto);
@@ -98,6 +100,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @AuditAction(action = "USER_SIGNUP")
     public ResponseEntity<UserProfile> registerUser(SignUpRequestDto signUpRequestDto) throws RequestError {
         try {
             logger.debug("Enter into AuthService.registerUser : Parameters : {}", signUpRequestDto);
@@ -219,6 +222,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @AuditAction(action = "USER_LOGOUT")
     public ResponseEntity<Boolean> logout(HttpServletRequest request, HttpServletResponse response) {
         try {
             logger.debug("Enter into AuthService.logout");

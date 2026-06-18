@@ -39,6 +39,12 @@
 - Prima di procedere con la prossima fase (analisi, creazione file, implementazione, test, commit), dichiarare esplicitamente cosa si sta per fare: quali directory/file verranno creati, modificati o eliminati, e in quale percorso.
 - Attendere conferma dell'utente prima di eseguire.
 
+## Creazione file di spec per UC
+
+- I file di spec vanno creati **uno alla volta**, in questo ordine: `analysis.md` → `requirements.md` → `design.md` → `tasks.md`
+- Dopo la creazione di ciascun file, mostrare il contenuto completo e attendere esplicita conferma dell'utente prima di procedere al file successivo
+- Non procedere al file successivo finché l'utente non approva quello corrente
+
 ## Operazioni che richiedono conferma esplicita
 
 - Modifica o rimozione di credenziali di default (password admin, secret, chiavi) senza chiedere

@@ -10,7 +10,11 @@ User Profile Management System — Spring Boot app con autenticazione JWT, gesti
 ## Conventions
 
 - Lingua codice/commenti: inglese. Documentazione/comunicazione: italiano.
-- Specs per UC: in `.kiro/specs/` viene creata una cartella per ogni use case (es. `.kiro/specs/UC-S-003/`), contenente `requirements.md`, `design.md` e `tasks.md`. Per `requirements.md` seguire il formato: User Story, Requisiti Funzionali, Requisiti Non Funzionali, Criteri di Accettazione in formato Given/When/Then.
+- Specs per UC: in `.kiro/specs/` viene creata una cartella per ogni use case (es. `.kiro/specs/UC-S-003/`), contenente i seguenti file nell'ordine:
+  1. `analysis.md` — analisi ad alto livello **prima** di qualsiasi implementazione: scheda UC, obiettivo di business, perimetro (in/out scope), attori, dipendenze da/verso altri UC, rischi e valore strategico. Contiene anche **scenari di rischio**: cosa può andare storto e come mitigarlo.
+  2. `requirements.md` — User Story, Requisiti Funzionali, Requisiti Non Funzionali, Criteri di Accettazione in formato Given/When/Then. I criteri di accettazione **sono** gli scenari funzionali: happy path, casi di errore, edge case, sicurezza.
+  3. `design.md` — architettura, componenti nuovi, analisi impatto sul codice esistente, note tecniche.
+  4. `tasks.md` — lista di task operativi con checkbox, dall'analisi al test finale su Docker. Ogni task di testing include i **casi di test concreti** (input, precondizioni, risultato atteso) che verranno poi implementati come metodi JUnit con Javadoc.
 - Logbook: mantenere aggiornato `GiornaleDiBordo.md` nella root del progetto. Per ogni UC affrontato, registrare ID, titolo, esito e appunti rilevanti. Prima di passare a un nuovo UC, proporre all'utente cosa inserire nel logbook.
 
 ## Tech Stack
