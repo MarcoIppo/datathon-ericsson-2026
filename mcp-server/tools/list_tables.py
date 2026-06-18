@@ -1,46 +1,38 @@
-"""
-MCP tool: list_tables
-Returns all user tables with their column names and types.
-Compatible with H2 (schema 'PUBLIC') and PostgreSQL (schema 'public').
-"""
 import os
 from db.connection import get_connection
 
 
 def list_tables() -> list[dict]:
-    """
-    Query INFORMATION_SCHEMA to return table names and column definitions.
-    Returns a list of { table_name, columns: [{name, type}] }.
-    """
-    profile = os.environ.get('DB_PROFILE', 'h2').lower()
-    schema = 'PUBLIC' if profile == 'h2' else 'public'
-
+    """Return list of tables with their columns from the database."""
     conn = get_connection()
     try:
         cursor = conn.cursor()
+        profile = os.environ.get('DB_PROFILE', 'h2').lower()
 
-        cursor.execute(
-            "SELECT table_name FROM information_schema.tables "
-            "WHERE table_schema = %s ORDER BY table_name" if profile == 'postgres'
-            else "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES "
-                 "WHERE TABLE_SCHEMA = ? ORDER BY TABLE_NAME",
-            (schema,)
-        )
-        tables = [row[0] for row in cursor.fetchall()]
+        if profile == 'postgres':
+            cursor.execute("""
+                SELECT c.table_name, c.column_name, c.data_type
+                FROM information_schema.columns c
+                JOIN information_schema.tables t
+                  ON c.table_name = t.table_name AND c.table_schema = t.table_schema
+                WHERE t.table_schema = 'public' AND t.table_type = 'BASE TABLE'
+                ORDER BY c.table_name, c.ordinal_position
+            """)
+        else:
+            cursor.execute("""
+                SELECT c.TABLE_NAME, c.COLUMN_NAME, c.DATA_TYPE
+                FROM INFORMATION_SCHEMA.COLUMNS c
+                JOIN INFORMATION_SCHEMA.TABLES t ON c.TABLE_NAME = t.TABLE_NAME
+                WHERE t.TABLE_SCHEMA = 'PUBLIC' AND t.TABLE_TYPE = 'BASE TABLE'
+                ORDER BY c.TABLE_NAME, c.ORDINAL_POSITION
+            """)
 
-        result = []
-        for table in tables:
-            cursor.execute(
-                "SELECT column_name, data_type FROM information_schema.columns "
-                "WHERE table_schema = %s AND table_name = %s ORDER BY ordinal_position"
-                if profile == 'postgres'
-                else "SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS "
-                     "WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION",
-                (schema, table)
-            )
-            columns = [{'name': r[0], 'type': r[1]} for r in cursor.fetchall()]
-            result.append({'table_name': table, 'columns': columns})
+        rows = cursor.fetchall()
+        tables: dict[str, list] = {}
+        for row in rows:
+            table, col, dtype = str(row[0]), str(row[1]), str(row[2])
+            tables.setdefault(table, []).append({'name': col, 'type': dtype})
 
-        return result
+        return [{'table_name': t, 'columns': cols} for t, cols in tables.items()]
     finally:
         conn.close()

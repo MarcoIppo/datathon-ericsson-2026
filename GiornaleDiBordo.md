@@ -154,3 +154,110 @@ Eliminare la vulnerabilità rappresentata dall'endpoint pubblico `POST /api/auth
 
 ### Stato
 - ✅ Build SUCCESS, 34/34 test passano
+
+---
+
+## 2026-06-17 — UC-S-002: Password esposta in log/API
+
+### Approccio
+Pipeline a 2 agenti specializzati lanciati in sequenza:
+- **sec-analyzer**: analisi statica completa → `exploit/UC-S-002/vulnerability_report.md`
+- **sec-fixer**: applica i fix, scrive unit test, verifica su Docker
+
+### Vettori identificati (6 totali)
+
+| ID | File | Tipo | Criticità |
+|---|---|---|---|
+| V1 | `LoginDto.toString()` | LOG_LEAK | CRITICAL |
+| V2 | `SignUpRequestDto.toString()` | LOG_LEAK | CRITICAL |
+| V3 | `AuthServiceImpl` loga i DTO via SLF4J `{}` | LOG_LEAK | CRITICAL |
+| V4 | `UserProfile.password` senza `@JsonProperty` | API_EXPOSURE | CRITICAL |
+| V5 | `EggUpInfo.password` esposto via `@OneToOne` | API_EXPOSURE | HIGH |
+| V6 | `setPassword(null)` in `registerUser` — mitigazione fragile | API_EXPOSURE | MEDIUM |
+
+### Fix applicati
+
+1. `LoginDto.toString()` e `SignUpRequestDto.toString()` → password sostituita con `[PROTECTED]`
+2. `UserProfile.password` e `EggUpInfo.password` → `@JsonProperty(access = WRITE_ONLY)`
+
+### Test
+- `PasswordExposureTest.java` — 5 test (JUnit 5, zero Spring context): toString masking + serializzazione JSON + deserializzazione
+
+### Risultati
+- ✅ BUILD SUCCESS — 36/36 test passati (Java 17)
+- ✅ Verifica su Docker: `GET /api/profiles` → campo `password` assente dal JSON (PROTECTED)
+- ✅ Commit `2748a05` su branch `feature/UC-S-002`
+
+---
+
+## 2026-06-17 — UC-MCP-004: MCP Server per database H2/PostgreSQL
+
+### Approccio
+MCP Server Python (FastMCP, stdio) con virtual environment isolato in `mcp-server/venv/`.
+
+### Architettura
+- `db/sanitizer.py` — READ-ONLY enforcement + field masking
+- `db/connection.py` — factory H2 (jaydebeapi) / PostgreSQL (psycopg2) da env vars
+- `tools/list_tables.py` — elenca tabelle con schema
+- `tools/query_database.py` — esegue SELECT con audit log
+- `index.py` — entry point FastMCP stdio registrato in `.kiro/mcp.json`
+
+### Governance
+- Solo query SELECT — DDL/DML bloccati nel server
+- Campi sensibili (`password`, token) mascherati con `[REDACTED]`
+- Credenziali da variabili d'ambiente — nessun hardcoding
+- Audit log in `mcp-server/audit.log`
+- Distinzione datathon/enterprise documentata in `.kiro/specs/UC-MCP-004/guardrails.md`
+
+### Test
+- `test_sanitizer.py` — 14 test unit (zero dipendenze DB): READ-ONLY enforcement + masking
+- `test_integration.py` — 7 test integrazione su PostgreSQL Docker: list_tables, count, password redaction, blocco DELETE/DROP, audit log
+
+### Risultati
+- ✅ Unit test: 14/14
+- ✅ Integrazione PostgreSQL Docker: 7/7
+- ⚠️ H2: non testabile localmente (file DB assente senza app Spring attiva; funzionerà con `spring-boot:run`)
+- ✅ Build Maven regressione: BUILD SUCCESS 36/36
+- ✅ Commit `2fdb009` su branch `feature/UC-MCP-004`
+
+---
+
+## 2026-06-18 — MCP: Problemi di governance aziendale con profili Kiro CLI
+
+### Contesto
+Dopo aver completato UC-MCP-004 (MCP server `datathon-db`), si è tentato di usare i tool MCP direttamente dalla chat Kiro CLI. Emersi vincoli legati al profilo aziendale assegnato all'utente.
+
+### Problema 1 — L'agente chat non è il client MCP
+La chat Kiro (questo thread) **non invoca i tool MCP direttamente**. Il protocollo MCP (stdio JSON-RPC) è disponibile solo quando Kiro CLI è avviato come client MCP, non nella chat embedded. Come workaround si è invocato il modulo Python del server direttamente via shell — stesso codice, ma **bypass del layer MCP**.
+
+### Problema 2 — Agent locale non riconosciuto
+L'agent `datathon-analyst.json` creato in `.kiro/agents/` (locale al workspace) **non veniva listato** da `kiro agent list`. La documentazione Kiro conferma che gli agent locali sono validi, ma in pratica il CLI non li ha caricati.
+- **Workaround applicato**: symlink da `.kiro/agents/datathon-analyst.json` → `~/.kiro/agents/datathon-analyst.json`
+
+### Problema 3 — Profili MCP aziendali (MCPOff / MCPUserOn / MCPDevOn)
+L'ambiente aziendale Ericsson/ELIS utilizza profili di governance MCP configurati a livello organizzativo. Il profilo attivo per questo utente è **MCPUserOn**.
+
+La documentazione ufficiale Kiro descrive un sistema di governance MCP enterprise (IAM Identity Center / Pro tier) con un toggle globale on/off. I profili specifici `MCPOff`, `MCPUserOn`, `MCPDevOn` sono denominazioni aziendali interne — i loro comportamenti esatti **non sono documentati pubblicamente**. In base al comportamento osservato:
+
+| Profilo | Comportamento osservato/atteso |
+|---------|-------------------------------|
+| `MCPOff` | MCP completamente disabilitato. `/mcp` mostra "MCP has been disabled by your administrator". Nessun tool MCP disponibile. |
+| `MCPUserOn` | MCP abilitato ma con restrizioni: solo server dal registry aziendale, impossibile aggiungere server custom. Agent con `mcpServers` inline ignorati o non caricati. |
+| `MCPDevOn` | MCP abilitato senza restrizioni registry: server custom consentiti, configurazione libera in agent/mcp.json. |
+
+**Impatto su questo progetto** (profilo `MCPUserOn`):
+- Il server `datathon-db` è custom (non nel registry aziendale) → non caricabile come tool MCP nativo nella chat
+- La configurazione in `.kiro/mcp.json` e `.kiro/settings/mcp.json` è ignorata a runtime
+- L'agent `datathon-analyst.json` con `mcpServers` inline non riesce ad esporre i tool MCP
+- Il processo Python del server è in esecuzione (PID verificato) ma non collegato al client MCP
+
+### Workaround praticabili con MCPUserOn
+1. **Invocazione diretta del modulo Python** via shell (come fatto in questa sessione) — funziona, ma non è MCP autentico
+2. **Richiesta all'amministratore** di aggiungere `datathon-db` al registry aziendale
+3. **Switch a profilo MCPDevOn** se disponibile per il proprio account
+
+### Riferimenti
+- Documentazione Kiro MCP governance: https://kiro.dev/docs/cli/mcp/security/
+- Agent configuration: `.kiro/agents/datathon-analyst.json`
+- MCP server: `mcp-server/index.py`
+- Audit log: `mcp-server/audit.log`

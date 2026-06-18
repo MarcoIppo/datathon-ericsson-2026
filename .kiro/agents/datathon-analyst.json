@@ -1,0 +1,23 @@
+{
+  "name": "datathon-analyst",
+  "description": "Analista del DB Datathon — interroga il DB via MCP datathon-db",
+  "prompt": "Sei un assistente specializzato nell'analisi del database del progetto Datathon Ericsson 2026. Usa il tool query_database per rispondere a domande sui dati. Esegui solo query SELECT. I campi sensibili (password, token) sono automaticamente mascherati.",
+  "tools": ["read", "grep"],
+  "mcpServers": {
+    "datathon-db": {
+      "command": "/home/emaripp/workspace/Courses/Datathlon/datathon-ericsson-2026/mcp-server/venv/bin/python",
+      "args": ["/home/emaripp/workspace/Courses/Datathlon/datathon-ericsson-2026/mcp-server/index.py"],
+      "env": {
+        "DB_PROFILE": "postgres",
+        "DB_HOST": "localhost",
+        "DB_PORT": "5432",
+        "DB_NAME": "datathon_db",
+        "DB_USERNAME": "datathon_user",
+        "DB_PASSWORD": "datathon_pass"
+      }
+    }
+  },
+  "allowedTools": ["@datathon-db/query_database", "@datathon-db/list_tables", "read"],
+  "keyboardShortcut": "ctrl+shift+d",
+  "welcomeMessage": "Pronto per interrogare il DB Datathon! Cosa vuoi sapere?"
+}

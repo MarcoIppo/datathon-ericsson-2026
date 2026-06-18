@@ -25,11 +25,11 @@ sec-analyzer  →  sec-fixer
 - [x] Fix V3: `UserProfile.password` → `@JsonProperty(WRITE_ONLY)`
 - [x] Fix V4: `EggUpInfo.password` → `@JsonProperty(WRITE_ONLY)`
 - [x] Scrittura `PasswordExposureTest.java` (5 test con Javadoc)
-- [ ] Build: `./mvnw clean package` — bloccato da Java version mismatch (Java 11 vs Java 17 richiesto — blocco pre-esistente UC-B-006)
+- [x] Build: `./mvnw clean package` — BUILD SUCCESS 36/36 test (JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64)
 - [x] Docker: `docker compose up --build -d`
 - [x] Verifica su target: tutti i vettori PROTECTED (campo `password` assente da GET /api/profiles)
 
 ## Completamento
 
-- [ ] Commit su branch `feature/UC-S-002`
-- [ ] Aggiornamento `GiornaleDiBordo.md`
+- [x] Commit su branch `feature/UC-S-002` (2748a05)
+- [x] Aggiornamento `GiornaleDiBordo.md`
